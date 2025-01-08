@@ -62,6 +62,7 @@ if (empty($id_peminjaman)) {
     die("ID Peminjaman tidak valid.");
 }
 
+// Validasi: Pastikan id_peminjaman milik pengguna yang login
 $query = "
     SELECT 
         g.nama_gedung, 
@@ -78,18 +79,19 @@ $query = "
     JOIN gedung g ON r.id_gedung = g.id_gedung
     LEFT JOIN pengguna p1 ON r.nik_pic = p1.nik
     JOIN pengguna p2 ON pm.nik = p2.nik
-    WHERE pm.id_peminjaman = ?
+    WHERE pm.id_peminjaman = ? AND pm.nik = ?
 ";
 
 $stmt = $conn->prepare($query);
-$stmt->bind_param("i", $id_peminjaman);
+$stmt->bind_param("is", $id_peminjaman, $nik); // Validasi berdasarkan id_peminjaman dan nik
 $stmt->execute();
 $result = $stmt->get_result()->fetch_assoc();
 
 if (!$result) {
-    die("Data peminjaman tidak ditemukan.");
+    die("Ini adalah tampilan detail riwayat peminjaman orang lain.");
 }
 
+// Ambil data detail peminjaman
 $nama_gedung = htmlspecialchars($result['nama_gedung']);
 $kode_ruangan = htmlspecialchars($result['kode_ruangan']);
 $pic_ruangan = htmlspecialchars($result['pic_ruangan']);
