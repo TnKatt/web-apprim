@@ -236,7 +236,7 @@ function isBerlangsungButtonVisible($waktuMulai, $waktuSelesai) {
                                 }
 
                                 // Tombol Detail
-                                echo '<a href="..' . $row['id_peminjaman'] . '">';
+                                echo '<a href="../admin/detail-riwayat.php?id_peminjaman=' . $row['id_peminjaman'] . '">';
                                 echo '<button class="edit-button">Detail</button>';
                                 echo '</a>';
                                 echo '</td>';
