@@ -152,7 +152,6 @@ $tanggal_pengajuan = formatTanggalIndonesia($result['tanggal_peminjaman'], true)
                     <li><a href="../mahasiswa/data-diri.php">Data Diri</a></li>
                     <li><a href="../mahasiswa/notifikasi.php">Notifikasi</a></li>
                     <li><a href="../mahasiswa/riwayat.php">Riwayat</a></li>
-                    <li><a href="../mahasiswa/data-pengguna.php">Data Pengguna</a></li>
                 </ul>
             </div>
 
