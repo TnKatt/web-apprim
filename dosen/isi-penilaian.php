@@ -8,41 +8,31 @@ if (!isset($_SESSION['nik'])) {
     exit();
 }
 
-// Ambil data user dari database
-$nik = $_SESSION['nik']; // Ambil NIK dari session
-
-// Gunakan prepared statement untuk keamanan
+$nik = $_SESSION['nik'];
 $stmt_user = $conn->prepare("SELECT * FROM pengguna WHERE nik = ?");
 $stmt_user->bind_param("s", $nik);
 $stmt_user->execute();
 $result_user = $stmt_user->get_result();
 
-// Periksa apakah data user ditemukan
 if ($result_user->num_rows === 0) {
     die("Data pengguna tidak ditemukan.");
 }
 
 $user_data = $result_user->fetch_assoc();
-$foto_user = !empty($user_data['foto_pengguna']) ? "../images/pengguna/" . htmlspecialchars($user_data['foto_pengguna']) : "../images/pengguna/foto_default.jpg";
-$nama_lengkap = htmlspecialchars($user_data['nama_lengkap']);
-
-// Ambil data role user
 $role_user = $user_data['peran'];
 
-// Validasi role untuk akses halaman
 if ($role_user !== 'Dosen') {
-    die("Akses hanya untuk Dosen.");
+    die("Akses hanya untuk dosen.");
 }
 
-// Ambil ID peminjaman yang dipilih
 $id_peminjaman = isset($_GET['id_peminjaman']) ? $_GET['id_peminjaman'] : null;
 if (!$id_peminjaman) {
     die("ID peminjaman tidak valid.");
 }
 
-// Ambil data peminjaman berdasarkan ID
+// Ambil data peminjaman untuk ditampilkan
 $stmt = $conn->prepare("SELECT * FROM peminjaman WHERE id_peminjaman = ?");
-$stmt->bind_param("s", $id_peminjaman);
+$stmt->bind_param("i", $id_peminjaman);
 $stmt->execute();
 $hasil_peminjaman = $stmt->get_result();
 
@@ -51,24 +41,6 @@ if ($hasil_peminjaman->num_rows === 0) {
 }
 
 $data_peminjaman = $hasil_peminjaman->fetch_assoc();
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Ambil nilai penilaian dari form
-    $penilaian = isset($_POST['penilaian']) ? $_POST['penilaian'] : 0;
-    $id_peminjaman = $_POST['id_peminjaman'];
-
-    // Insert penilaian ke tabel penilaian berdasarkan id_peminjaman
-    $stmt_insert = $conn->prepare("INSERT INTO penilaian (id_peminjaman, nilai_penilaian) VALUES (?, ?)");
-    $stmt_insert->bind_param("si", $id_peminjaman, $penilaian);
-    $stmt_insert->execute();
-
-    // Update penilaian pada tabel peminjaman (ganti kolom penilaian_diberikan menjadi penilaian)
-    $stmt_update_peminjaman = $conn->prepare("UPDATE peminjaman SET penilaian = ? WHERE id_peminjaman = ?");
-    $stmt_update_peminjaman->bind_param("is", $penilaian, $id_peminjaman);
-    $stmt_update_peminjaman->execute();
-
-    echo "<script>alert('Penilaian berhasil dikirim!'); window.location.href = 'riwayat.php';</script>";
-}
 ?>
 
 <!DOCTYPE html>
@@ -125,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 <div class="content">
                     <h1>Isi Penilaian untuk Peminjaman</h1>
-                    <form action="../dosen/isi-penilaian.php?id_peminjaman=<?= $data_peminjaman['id_peminjaman'] ?>" method="POST">
+                    <form action="../dosen/update-nilai.php?id_peminjaman=<?= $data_peminjaman['id_peminjaman'] ?>" method="POST">
                             <input type="hidden" name="id_peminjaman" value="<?= $data_peminjaman['id_peminjaman'] ?>">
                             <div class="form-group">
                                 <label for="penilaian">Penilaian (1 - 10):</label>
