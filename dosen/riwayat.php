@@ -175,6 +175,7 @@ function isBerlangsungButtonVisible($waktuMulai, $waktuSelesai) {
                     <li><a href="../dosen/data-diri.php">Data Diri</a></li>
                     <li><a href="../dosen/notifikasi.php">Notifikasi</a></li>
                     <li><a href="../dosen/riwayat.php">Riwayat</a></li>
+                    <li><a href="../dosen/data-pengguna.php">Data Pengguna</a></li>
                 </ul>
             </div>
             <div class="content">
@@ -287,10 +288,9 @@ function isBerlangsungButtonVisible($waktuMulai, $waktuSelesai) {
                                 // Tombol Batalkan
                                 if ($tombolBatalkanVisible) {
                                     $id_peminjaman_safe = htmlspecialchars($row['id_peminjaman']); // Sanitasi output
-                                    echo '<a href="../dosen/pembatalan.php?id_peminjaman=' . $id_peminjaman_safe . '">';
-                                    echo '<button class="delete-button" style="margin-right:10px;">Batalkan</button>';
-                                    echo '</a>';
+                                    echo '<button class="delete-button" style="margin-right:10px;" onclick="confirmCancel(' . $id_peminjaman_safe . ')">Batalkan</button>';
                                 }
+
 
                                 // Tombol Berlangsung
                                 if ($tombolBerlangsungVisible) {
@@ -370,6 +370,18 @@ function isBerlangsungButtonVisible($waktuMulai, $waktuSelesai) {
             item.classList.toggle('active');
         });
     });     
+
+        // Fungsi untuk menampilkan popup konfirmasi sebelum melanjutkan pembatalan
+    function confirmCancel(idPeminjaman) {
+        // Menampilkan popup konfirmasi
+        var result = confirm("Apakah Anda yakin ingin membatalkan peminjaman ini?");
+
+        // Jika pengguna mengklik "OK", arahkan ke halaman pembatalan
+        if (result) {
+            // Arahkan ke halaman pembatalan dengan id_peminjaman sebagai parameter
+            window.location.href = "../dosen/pembatalan.php?id_peminjaman=" + idPeminjaman;
+        }
+    }
 
     $(document).ready(function () {
         $.fn.dataTable.ext.errMode = 'none'; // Sembunyikan error
