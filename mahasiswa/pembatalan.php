@@ -1,155 +1,114 @@
 <?php
-    // Mulai session untuk menggunakan session variables
-    session_start();
+// Menampilkan semua error untuk debugging
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
-    // Periksa apakah session pengguna sudah ada
-    if (!isset($_SESSION['nik'])) {
-        // Jika tidak ada, alihkan pengguna ke halaman login
-        header("Location: ../auth/login.php");
-        exit();
-    }
+// Memulai sesi
+session_start();
 
-    // Masukkan file koneksi
-    require_once('../koneksi/koneksi.php');
+// Koneksi ke database
+require_once '../koneksi/koneksi.php'; // Pastikan jalur ini benar
 
-    // Ambil data pengguna dari database
-    $nik = $_SESSION['nik']; // Ambil NIK dari session
+// Validasi input
+if (!isset($_GET['id_peminjaman']) || !is_numeric($_GET['id_peminjaman'])) {
+    die('ID Peminjaman tidak valid');
+}
+$id_peminjaman = (int) $_GET['id_peminjaman'];
 
-    // Gunakan prepared statement untuk keamanan
-    $stmt_pengguna = $conn->prepare("SELECT * FROM pengguna WHERE nik = ?");
-    $stmt_pengguna->bind_param("s", $nik);
-    $stmt_pengguna->execute();
-    $result_pengguna = $stmt_pengguna->get_result();
+// Periksa apakah NIK pengguna tersedia
+$nik = isset($_SESSION['nik']) ? $_SESSION['nik'] : null;
+if (!$nik) {
+    die('Pengguna tidak terautentikasi.');
+}
 
-    // Periksa apakah data pengguna ditemukan
-    if ($result_pengguna->num_rows === 0) {
-        die("Data pengguna tidak ditemukan.");
-    }
+// Validasi bahwa NIK ada di tabel pengguna
+$queryCheckNik = "SELECT nik FROM pengguna WHERE nik = ?";
+$stmtCheckNik = $conn->prepare($queryCheckNik);
+$stmtCheckNik->bind_param('s', $nik);
+$stmtCheckNik->execute();
+$stmtCheckNik->store_result();
 
-    $pengguna_data = $result_pengguna->fetch_assoc();
-    $foto_pengguna = !empty($pengguna_data['foto_pengguna']) ? "../images/pengguna/" . htmlspecialchars($pengguna_data['foto_pengguna']) : "../images/pengguna/foto_default.jpg";
-    $nama_lengkap = htmlspecialchars($pengguna_data['nama_lengkap']);
-    
-    // Ambil data peran pengguna
-    $peran_pengguna = $pengguna_data['peran'];
+if ($stmtCheckNik->num_rows === 0) {
+    die('NIK tidak ditemukan dalam database.');
+}
 
-    // Validasi peran untuk akses halaman
-    if ($peran_pengguna !== 'Mahasiswa') {
-        die("Akses hanya untuk Mahasiswa.");
-    }
+$stmtCheckNik->close();
+
+// Ambil data peminjaman yang ingin dibatalkan
+$querySelectPeminjaman = "SELECT id_peminjaman, nik, kode_ruangan, tanggal_pemakaian, waktu_mulai, waktu_selesai, tanggal_peminjaman, keperluan, status_peminjaman, penilaian
+                          FROM peminjaman
+                          WHERE id_peminjaman = ?";
+$stmtSelectPeminjaman = $conn->prepare($querySelectPeminjaman);
+$stmtSelectPeminjaman->bind_param('i', $id_peminjaman);
+$stmtSelectPeminjaman->execute();
+$stmtSelectPeminjaman->store_result();
+
+if ($stmtSelectPeminjaman->num_rows === 0) {
+    die('Peminjaman tidak ditemukan.');
+}
+
+// Mengambil hasil query
+$stmtSelectPeminjaman->bind_result($old_id_peminjaman, $old_nik, $old_kode_ruangan, $old_tanggal_pemakaian, $old_waktu_mulai, $old_waktu_selesai, $old_tanggal_peminjaman, $old_keperluan, $old_status_peminjaman, $old_penilaian);
+$stmtSelectPeminjaman->fetch();
+
+// Memulai transaksi
+try {
+    $conn->autocommit(FALSE);
+
+    // 1. Insert data ke tabel peminjaman dengan status "Dibatalkan"
+    $queryInsertPeminjaman = "INSERT INTO peminjaman (nik, kode_ruangan, tanggal_pemakaian, waktu_mulai, waktu_selesai, tanggal_peminjaman, keperluan, status_peminjaman, penilaian)
+                              VALUES (?, ?, ?, ?, ?, ?, ?, 'Dibatalkan', ?)";
+    $stmtInsertPeminjaman = $conn->prepare($queryInsertPeminjaman);
+    $stmtInsertPeminjaman->bind_param('ssssssss', $old_nik, $old_kode_ruangan, $old_tanggal_pemakaian, $old_waktu_mulai, $old_waktu_selesai, $old_tanggal_peminjaman, $old_keperluan, $old_penilaian);
+    $stmtInsertPeminjaman->execute();
+
+    // Mendapatkan id_peminjaman yang baru saja diinsert
+    $new_id_peminjaman = $conn->insert_id;
+
+    // 2. Insert data ke tabel notifikasi
+    $queryInsertNotifikasi = "INSERT INTO notifikasi (id_peminjaman, nik, status_peminjaman) 
+                              VALUES (?, ?, 'Dibatalkan')";
+    $stmtInsertNotifikasi = $conn->prepare($queryInsertNotifikasi);
+    $stmtInsertNotifikasi->bind_param('is', $new_id_peminjaman, $nik);
+    $stmtInsertNotifikasi->execute();
+
+    // 3. Hapus data dari tabel riwayat
+    $queryDeleteRiwayat = "DELETE FROM riwayat WHERE id_peminjaman = ?";
+    $stmtDeleteRiwayat = $conn->prepare($queryDeleteRiwayat);
+    $stmtDeleteRiwayat->bind_param('i', $id_peminjaman);
+    $stmtDeleteRiwayat->execute();
+
+    // 4. Hapus data notifikasi yang terkait dengan peminjaman yang dibatalkan
+    $queryDeleteNotifikasi = "DELETE FROM notifikasi WHERE id_peminjaman = ?";
+    $stmtDeleteNotifikasi = $conn->prepare($queryDeleteNotifikasi);
+    $stmtDeleteNotifikasi->bind_param('i', $id_peminjaman);
+    $stmtDeleteNotifikasi->execute();
+
+    // 5. Hapus data peminjaman yang ingin dibatalkan dari tabel peminjaman
+    $queryDeletePeminjaman = "DELETE FROM peminjaman WHERE id_peminjaman = ?";
+    $stmtDeletePeminjaman = $conn->prepare($queryDeletePeminjaman);
+    $stmtDeletePeminjaman->bind_param('i', $id_peminjaman);
+    $stmtDeletePeminjaman->execute();
+
+    // Commit transaksi
+    $conn->commit();
+
+    // Redirect dengan pesan sukses
+    header("Location: ../mahasiswa/riwayat.php?message=Peminjaman%20Berhasil%20Dibatalkan");
+    exit;
+} catch (Exception $e) {
+    // Rollback transaksi jika terjadi kesalahan
+    $conn->rollback();
+    echo "Terjadi kesalahan: " . $e->getMessage();
+} finally {
+    // Tutup statement jika telah diinisialisasi
+    if (isset($stmtSelectPeminjaman)) $stmtSelectPeminjaman->close();
+    if (isset($stmtInsertPeminjaman)) $stmtInsertPeminjaman->close();
+    if (isset($stmtInsertNotifikasi)) $stmtInsertNotifikasi->close();
+    if (isset($stmtDeleteRiwayat)) $stmtDeleteRiwayat->close();
+    if (isset($stmtDeleteNotifikasi)) $stmtDeleteNotifikasi->close();
+    if (isset($stmtDeletePeminjaman)) $stmtDeletePeminjaman->close();
+    $conn->close();
+}
 ?>
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>APPRIM | Pembatalan</title>
-    <link rel="stylesheet" href="../back-end/mahasiswa/pembatalan.css">
-</head>
-<body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <div class="logo">
-                <img src="../images/aplikasi/logo.jpg" alt="Logo" class="logo-img">
-                <span class="title">APPRIM | PEMBATALAN</span>
-            </div>
-            <div class="profile-logout">
-                <div class="profile">
-                    <img src="<?= $foto_pengguna ?>" alt="pengguna Profile" class="profile-img">
-                    <span class="username"><?= htmlspecialchars($nama_lengkap) ?></span>
-                </div>
-                <div class="logout">
-                    <a href="/logout">Keluar</a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Navigation -->
-        <div class="navigation">
-            <ul class="nav-list">
-                <li><a href="/beranda">Beranda</a></li>
-                <li><a href="/about">Tentang Kami</a></li>
-                <li><a href="/features">Fitur</a></li>
-                <li><a href="/contact">Kontak</a></li>
-            </ul>
-        </div>
-
-        <!-- Sidebar dan Content -->
-        <div class="row">
-            <div class="sidebar">
-                <h2>Menu</h2>
-                <ul class="sidebar-list">
-                    <li><a href="../mahasiswa/halaman-utama.php">Halaman Utama</a></li>
-                    <li><a href="../mahasiswa/data-diri.php">Data Diri</a></li>
-                    <li><a href="/notifications">Notifikasi</a></li>
-                    <li><a href="../mahasiswa/riwayat.php">Riwayat</a></li>
-                </ul>
-            </div>
-            <div class="content">
-                <h1>Pembatalan</h1>
-                <div class="history-item">
-                    <div class="inner-border">
-                        <div class="left">
-                            <div class="code">
-                                TA.81
-                            </div>  
-                        <div class="details">
-                            <p>01 - 11 - 2024, 08:00 - 10:00 WIB</p>
-                            <p>Bimbingan Mahasiswa</p>
-                            <div>
-                            <span>Alasan: </span><input type="text" placeholder="Berikan alasan mu"></input> 
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="right">
-
-                        <div class="buttons">
-                            <a href="../mahasiswa/riwayat.php"><button class="detail">Kembali</button></a>
-                            <a href="../mahasiswa/detail-history-mahasiswa.php"><button class="cancel">Batalkan</button></a>
-                        </div>
-
-                        </div>
-                    </div>
-                </div>
-
-                </div> 
-                </div>  
-            </div>
-        </div>
-
-        <div class="row">
-                <div class="footer">
-                    <div class="footer-left">
-                        <img src="../images/polibatam.jpg" alt="Logo" class="footer-logo">
-                    </div>
-                    <div class="footer-center">
-                        <h3>Anggota Kelompok</h3>
-                        <ul>
-                            <li>Adhcya Hafeez Wibowo</li>
-                            <li>Nayla Nur Nabila</li>
-                            <li>Hermansa</li>
-                            <li>Berkat Tua Siallagan</li>
-                            <li>Suci Aqila Nst</li>
-                            <li>Ray Refaldo</li>
-                        </ul>
-                    </div>
-                    <div class="footer-right">
-                        <h3>NIM Anggota</h3>
-                        <ul>
-                            <li>4342401080</li>
-                            <li>4342401083</li>
-                            <li>4342401084</li>
-                            <li>4342401085</li>
-                            <li>4342401087</li>
-                            <li>4342401088</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-    </div>
-
-</body>
-</html>
