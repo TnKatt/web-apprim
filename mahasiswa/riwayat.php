@@ -171,10 +171,10 @@ function isBerlangsungButtonVisible($waktuMulai, $waktuSelesai) {
             <div class="sidebar">
                 <h2>Menu</h2>
                 <ul class="sidebar-list">
-                    <li><a href="../admin/halaman-utama.php">Halaman Utama</a></li>
-                    <li><a href="../admin/data-diri.php">Data Diri</a></li>
-                    <li><a href="../admin/notifikasi.php">Notifikasi</a></li>
-                    <li><a href="../admin/riwayat.php">Riwayat</a></li>
+                    <li><a href="../mahasiswa/halaman-utama.php">Halaman Utama</a></li>
+                    <li><a href="../mahasiswa/data-diri.php">Data Diri</a></li>
+                    <li><a href="../mahasiswa/notifikasi.php">Notifikasi</a></li>
+                    <li><a href="../mahasiswa/riwayat.php">Riwayat</a></li>
                 </ul>
             </div>
             <div class="content">
@@ -305,7 +305,7 @@ function isBerlangsungButtonVisible($waktuMulai, $waktuSelesai) {
 
                                 // Tombol Nilai
                                 if ($tombolNilaiVisible) {
-                                    echo '<a href="../admin/isi-penilaian.php?id_peminjaman=' . $row['id_peminjaman'] . '">';
+                                    echo '<a href="../mahasiswa/isi-penilaian.php?id_peminjaman=' . $row['id_peminjaman'] . '">';
                                     echo '<button class="edit-button" style="margin-right:10px;">Nilai</button>';
                                     echo '</a>';
                                 } else if ($row['penilaian'] !== NULL && $row['penilaian'] != 0) {
@@ -313,7 +313,7 @@ function isBerlangsungButtonVisible($waktuMulai, $waktuSelesai) {
                                 }
 
                                 // Tombol Detail
-                                echo '<a href="../admin/detail-riwayat.php?id_peminjaman=' . $row['id_peminjaman'] . '">';
+                                echo '<a href="../mahasiswa/detail-riwayat.php?id_peminjaman=' . $row['id_peminjaman'] . '">';
                                 echo '<button class="edit-button">Detail</button>';
                                 echo '</a>';
                                 echo '</td>';
@@ -378,7 +378,7 @@ function isBerlangsungButtonVisible($waktuMulai, $waktuSelesai) {
         // Jika pengguna mengklik "OK", arahkan ke halaman pembatalan
         if (result) {
             // Arahkan ke halaman pembatalan dengan id_peminjaman sebagai parameter
-            window.location.href = "../admin/pembatalan.php?id_peminjaman=" + idPeminjaman;
+            window.location.href = "../mahasiswa/pembatalan.php?id_peminjaman=" + idPeminjaman;
         }
     }
 
