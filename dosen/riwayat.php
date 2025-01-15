@@ -175,7 +175,6 @@ function isBerlangsungButtonVisible($waktuMulai, $waktuSelesai) {
                     <li><a href="../dosen/data-diri.php">Data Diri</a></li>
                     <li><a href="../dosen/notifikasi.php">Notifikasi</a></li>
                     <li><a href="../dosen/riwayat.php">Riwayat</a></li>
-                    <li><a href="../dosen/data-pengguna.php">Data Pengguna</a></li>
                 </ul>
             </div>
             <div class="content">
