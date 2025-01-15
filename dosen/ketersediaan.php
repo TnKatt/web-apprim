@@ -131,7 +131,7 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.5/css/jquery.dataTables.min.css">
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="../back-end/dosen/data-pengguna.css">
+    <link rel="stylesheet" href="../back-end/dosen/ketersediaan.css">
     <link rel="icon" type="jpg" href="../images/aplikasi/logoo.jpg">
 
     <style>
