@@ -118,6 +118,7 @@ function isBerlangsungButtonVisible($waktuMulai, $waktuSelesai) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>APPRIM | Riwayat</title>
     <link rel="stylesheet" href="../back-end/mahasiswa/riwayat.css">
+    <link rel="icon" type="jpg" href="../images/aplikasi/logoo.jpg">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
@@ -170,14 +171,90 @@ function isBerlangsungButtonVisible($waktuMulai, $waktuSelesai) {
             <div class="sidebar">
                 <h2>Menu</h2>
                 <ul class="sidebar-list">
-                    <li><a href="../mahasiswa/halaman-utama.php">Halaman Utama</a></li>
-                    <li><a href="../mahasiswa/data-diri.php">Data Diri</a></li>
-                    <li><a href="../mahasiswa/notifikasi.php">Notifikasi</a></li>
-                    <li><a href="../mahasiswa/riwayat.php">Riwayat</a></li>
+                    <li><a href="../admin/halaman-utama.php">Halaman Utama</a></li>
+                    <li><a href="../admin/data-diri.php">Data Diri</a></li>
+                    <li><a href="../admin/notifikasi.php">Notifikasi</a></li>
+                    <li><a href="../admin/riwayat.php">Riwayat</a></li>
                 </ul>
             </div>
             <div class="content">
                 <h1>Riwayat Peminjaman</h1>
+                <?php
+                if (isset($_GET['message'])) {
+                    switch ($_GET['message']) {
+                        case 'Peminjaman Berhasil Dibatalkan' :
+                            echo "<p style='
+                                background-color: #d4edda;
+                                color: #155724;
+                                border: 1px solid #c3e6cb;
+                                padding: 10px;
+                                border-radius: 5px;
+                                font-size: 16px;
+                            '>Peminjaman Berhasil Dibatalkan.</p>";
+                            break;
+                        case 'delete_success' :
+                            echo "<p style='
+                                background-color: #d4edda;
+                                color: #155724;
+                                border: 1px solid #c3e6cb;
+                                padding: 10px;
+                                border-radius: 5px;
+                                font-size: 16px;
+                            '>Pengguna berhasil dihapus.</p>";
+                            break;
+                        case 'update_success':
+                            echo "<p style='
+                                background-color: #d4edda;
+                                color: #155724;
+                                border: 1px solid #c3e6cb;
+                                padding: 10px;
+                                border-radius: 5px;
+                                font-size: 16px;
+                            '>Data berhasil diperbarui.</p>";
+                            break;
+                        case 'error_empty_fields':
+                            echo "<p style='
+                                background-color: #f8d7da;
+                                color: #721c24;
+                                border: 1px solid #f5c6cb;
+                                padding: 10px;
+                                border-radius: 5px;
+                                font-size: 16px;
+                            '>Kolom NIK, Nama Lengkap, dan Peran wajib diisi.</p>";
+                            break;
+                        case 'error_invalid_email':
+                            echo "<p style='
+                                background-color: #f8d7da;
+                                color: #721c24;
+                                border: 1px solid #f5c6cb;
+                                padding: 10px;
+                                border-radius: 5px;
+                                font-size: 16px;
+                            '>Format email tidak valid. Silakan periksa kembali.</p>";
+                            break;
+                        case 'error_update_failed':
+                            echo "<p style='
+                                background-color: #f8d7da;
+                                color: #721c24;
+                                border: 1px solid #f5c6cb;
+                                padding: 10px;
+                                border-radius: 5px;
+                                font-size: 16px;
+                            '>Gagal memperbarui data. Silakan coba lagi.</p>";
+                            break;
+                        case 'error_exception':
+                            echo "<p style='
+                                background-color: #f8d7da;
+                                color: #721c24;
+                                border: 1px solid #f5c6cb;
+                                padding: 10px;
+                                border-radius: 5px;
+                                font-size: 16px;
+                            '>Terjadi kesalahan pada sistem. Harap hubungi administrator.</p>";
+                            break;
+                    }
+                }
+                ?>
                 <table id="example" class="display" style="width:100%">
                     <thead>
                         <tr>
@@ -209,10 +286,10 @@ function isBerlangsungButtonVisible($waktuMulai, $waktuSelesai) {
 
                                 // Tombol Batalkan
                                 if ($tombolBatalkanVisible) {
-                                    echo '<a href="../mahasiswa/pembatalan.php?id=' . $row['id_peminjaman'] . '">';
-                                    echo '<button class="delete-button" style="margin-right:10px;">Batalkan</button>';
-                                    echo '</a>';
+                                    $id_peminjaman_safe = htmlspecialchars($row['id_peminjaman']); // Sanitasi output
+                                    echo '<button class="delete-button" style="margin-right:10px;" onclick="confirmCancel(' . $id_peminjaman_safe . ')">Batalkan</button>';
                                 }
+
 
                                 // Tombol Berlangsung
                                 if ($tombolBerlangsungVisible) {
@@ -228,7 +305,7 @@ function isBerlangsungButtonVisible($waktuMulai, $waktuSelesai) {
 
                                 // Tombol Nilai
                                 if ($tombolNilaiVisible) {
-                                    echo '<a href="../mahasiswa/isi-penilaian.php?id_peminjaman=' . $row['id_peminjaman'] . '">';
+                                    echo '<a href="../admin/isi-penilaian.php?id_peminjaman=' . $row['id_peminjaman'] . '">';
                                     echo '<button class="edit-button" style="margin-right:10px;">Nilai</button>';
                                     echo '</a>';
                                 } else if ($row['penilaian'] !== NULL && $row['penilaian'] != 0) {
@@ -236,7 +313,7 @@ function isBerlangsungButtonVisible($waktuMulai, $waktuSelesai) {
                                 }
 
                                 // Tombol Detail
-                                echo '<a href="../mahasiswa/detail-riwayat.php?id_peminjaman=' . $row['id_peminjaman'] . '">';
+                                echo '<a href="../admin/detail-riwayat.php?id_peminjaman=' . $row['id_peminjaman'] . '">';
                                 echo '<button class="edit-button">Detail</button>';
                                 echo '</a>';
                                 echo '</td>';
@@ -265,7 +342,7 @@ function isBerlangsungButtonVisible($waktuMulai, $waktuSelesai) {
                         <li>Nayla Nur Nabila</li>
                         <li>Hermansa</li>
                         <li>Berkat Tua Siallagan</li>
-                        <li>Suci Aqila Nst</li>
+                        <li>Suci Aqilah Nst</li>
                         <li>Ray Refaldo</li>
                     </ul>
                 </div>
@@ -283,8 +360,6 @@ function isBerlangsungButtonVisible($waktuMulai, $waktuSelesai) {
             </div>
         </div>
     </div>
-</div>
-    
 </body>
 <script>
     // Sidebar menu toggle
@@ -294,6 +369,18 @@ function isBerlangsungButtonVisible($waktuMulai, $waktuSelesai) {
             item.classList.toggle('active');
         });
     });     
+
+        // Fungsi untuk menampilkan popup konfirmasi sebelum melanjutkan pembatalan
+    function confirmCancel(idPeminjaman) {
+        // Menampilkan popup konfirmasi
+        var result = confirm("Apakah Anda yakin ingin membatalkan peminjaman ini?");
+
+        // Jika pengguna mengklik "OK", arahkan ke halaman pembatalan
+        if (result) {
+            // Arahkan ke halaman pembatalan dengan id_peminjaman sebagai parameter
+            window.location.href = "../admin/pembatalan.php?id_peminjaman=" + idPeminjaman;
+        }
+    }
 
     $(document).ready(function () {
         $.fn.dataTable.ext.errMode = 'none'; // Sembunyikan error
